@@ -89,6 +89,13 @@
             <div onclick="showMods()" class="star-mod-button"><span>star's mod<br>loader!</span></div>
         </div>
 
+        <div id="daily-screen" class="ui-overlay hidden bg-black">
+            <h2 class="text-6xl font-black mb-8 text-yellow-400">DAILY REWARD</h2>
+            <p id="daily-status" class="text-2xl mb-12 font-bold"></p>
+            <button id="claim-btn" onclick="claimDaily()" class="px-12 py-6 bg-yellow-500 rounded-full font-black text-2xl hover:scale-105">CLAIM REWARD</button>
+            <button onclick="showMenu()" class="mt-8 px-12 py-4 bg-gray-700 rounded-xl font-black text-xl">BACK</button>
+        </div>
+
         <div id="mods-screen" class="ui-overlay hidden mods-bg">
             <h2 id="snake-title" class="text-6xl font-black mb-12 italic text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-yellow-500 uppercase">MOD CENTER</h2>
             <div class="flex flex-col gap-6 w-96">
@@ -114,16 +121,7 @@
                 <button onclick="startLevel('Polargeist', 'ship')" class="p-10 bg-purple-600 rounded-3xl font-black text-2xl hover:scale-105 border-b-8 border-purple-900">Polargeist (Ship)</button>
             </div>
             <button onclick="showMenu()" class="mt-12 px-12 py-4 bg-gray-700 rounded-xl font-black text-xl">BACK</button>
-            <button id="map2-go-btn" onclick="showMap2()" class="hidden mt-4 px-12 py-4 bg-yellow-600 rounded-xl font-black text-xl hover:scale-105">MAP 2</button>
-        </div>
-
-        <div id="map2-screen" class="ui-overlay hidden bg-black">
-            <h2 class="text-5xl font-black mb-12 italic text-purple-400">MAP 2</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <button onclick="startLevel('Dry Out', 'cube')" class="p-10 bg-orange-600 rounded-3xl font-black text-2xl hover:scale-105 border-b-8 border-orange-900">Dry Out</button>
-                <button onclick="startLevel('Back on Track', 'wave')" class="p-10 bg-green-600 rounded-3xl font-black text-2xl hover:scale-105 border-b-8 border-green-900">Back on Track (Wave)</button>
-            </div>
-            <button onclick="showLevelSelect()" class="mt-12 px-12 py-4 bg-gray-700 rounded-xl font-black text-xl">BACK</button>
+            <button id="map2-go-btn" class="hidden mt-4 px-12 py-4 bg-yellow-600 rounded-xl font-black text-xl hover:scale-105">MAP 2</button>
         </div>
 
         <div id="in-game-ui" class="absolute top-5 right-5 flex flex-col items-end hidden">
@@ -146,11 +144,7 @@
 
         <div id="win-screen" class="ui-overlay hidden bg-black">
             <h2 class="text-6xl font-black mb-4 text-green-500 uppercase italic">LEVEL COMPLETE!</h2>
-            <p id="win-subtext" class="text-2xl font-bold mb-8 text-white hidden">UNLOCKED MAP 2</p>
-            <div id="win-buttons" class="flex flex-col gap-4">
-                <button id="map2-trigger-btn" onclick="showMap2()" class="hidden p-6 bg-yellow-500 rounded-full font-black text-2xl hover:scale-110">MAP 2</button>
-                <button onclick="showMenu()" class="p-10 bg-green-500 rounded-full font-black text-3xl hover:scale-110">MENU</button>
-            </div>
+            <button onclick="showMenu()" class="p-10 bg-green-500 rounded-full font-black text-3xl hover:scale-110">MENU</button>
         </div>
 
         <div id="tutorial-screen" class="ui-overlay hidden bg-black">
@@ -176,15 +170,10 @@
     </div>
 
     <script>
-        let synth, clockSynth, winSynth, isNewBest = false;
-        let tutorialStep = 0;
-        const tutorialMessages = [
-            "Hello! I am the Tutorial Star. Use SPACE or UP to jump!",
-            "In Cube mode, you can jump off surfaces.",
-            "In Ship or UFO mode, hold to fly!",
-            "Avoid the spikes. Good luck!"
-        ];
-
+        // --- Core Game Variables ---
+        let synth, clockSynth, winSynth;
+        
+        // --- Initialize Audio ---
         function initAudio() { 
             if(!synth) synth = new Tone.Synth().toDestination(); 
             if(!clockSynth) clockSynth = new Tone.MembraneSynth().toDestination();
@@ -192,46 +181,56 @@
             Tone.start(); 
         }
 
+        // --- Daily System Logic ---
+        function showDaily() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('daily-screen').classList.remove('hidden');
+            
+            const lastClaim = localStorage.getItem('lastDailyClaim');
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            if (lastClaim && (now - lastClaim < oneDay)) {
+                const remaining = Math.ceil((oneDay - (now - lastClaim)) / (60 * 60 * 1000));
+                document.getElementById('daily-status').textContent = `Come back in ${remaining} hours!`;
+                document.getElementById('claim-btn').classList.add('hidden');
+            } else {
+                document.getElementById('daily-status').textContent = "Claim your free reward!";
+                document.getElementById('claim-btn').classList.remove('hidden');
+            }
+        }
+
+        function claimDaily() {
+            localStorage.setItem('lastDailyClaim', Date.now());
+            document.getElementById('daily-status').textContent = "Reward Claimed! Enjoy!";
+            document.getElementById('claim-btn').classList.add('hidden');
+        }
+
+        // --- Standard Game Functions ---
+        function acceptTerms() { initAudio(); document.getElementById('terms-screen').classList.add('hidden'); document.getElementById('main-menu').classList.remove('hidden'); }
+        function showMenu() { 
+            ['main-menu', 'level-select-screen', 'tutorial-screen', 'daily-screen', 'mods-screen', 'customizer-screen'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById('main-menu').classList.remove('hidden'); 
+        }
+        function showLevelSelect() { document.getElementById('main-menu').classList.add('hidden'); document.getElementById('level-select-screen').classList.remove('hidden'); }
+        function showTutorial() { document.getElementById('main-menu').classList.add('hidden'); document.getElementById('tutorial-screen').classList.remove('hidden'); }
+        function showMods() { document.getElementById('main-menu').classList.add('hidden'); document.getElementById('mods-screen').classList.remove('hidden'); }
+        function showCustomizer() { document.getElementById('mods-screen').classList.add('hidden'); document.getElementById('customizer-screen').classList.remove('hidden'); }
+        function downloadMod() { document.getElementById('open-customizer-btn').classList.remove('hidden'); }
+        function saveMessages() { location.reload(); }
+
+        // --- Boilerplate Setup ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         window.onresize = resize; resize();
 
-        let scoreScale = 1, lastTimerSecond = -1, isMap2Unlocked = false;
-
-        function applySnakeAnimation() {
-            const title = document.getElementById('snake-title');
-            if(!title) return;
-            const text = title.textContent;
-            title.innerHTML = '';
-            text.split('').forEach((char, i) => {
-                const span = document.createElement('span');
-                span.textContent = char;
-                span.className = 'snake-letter';
-                span.style.animationDelay = (i * 0.1) + 's';
-                title.appendChild(span);
-            });
-        }
-
         window.onload = () => {
-            applySnakeAnimation();
-            document.getElementById('tutorial-text').textContent = tutorialMessages[0];
             const intro = document.getElementById('intro-screen');
-            const introBolt = document.getElementById('intro-bolt');
-            intro.classList.add('shake-animation');
-            introBolt.classList.add('strike-flash');
             setTimeout(() => { intro.classList.add('hidden'); document.getElementById('loading-screen').classList.remove('hidden'); startLoadingSequence(); }, 4000); 
         };
-
-        function nextTutorial() {
-            tutorialStep = (tutorialStep + 1) % tutorialMessages.length;
-            const msg = tutorialMessages[tutorialStep];
-            document.getElementById('tutorial-text').textContent = msg;
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(msg);
-                speechSynthesis.speak(utterance);
-            }
-        }
 
         function startLoadingSequence() {
             let progress = 0;
@@ -242,170 +241,7 @@
             }, 50);
         }
 
-        let isPlaying = false, isPaused = false, gameMode = 'ufo', cameraX = 0, currentLevelName = '', score = 0;
-        let player = { x: 150, y: 300, vY: 0, size: 40 };
-        let obstacles = [], ceiling = [], jumpPads = [];
-        let jumpPressed = false;
-        let squishCount = 0, startTime = 0, pauseAccumulatedTime = 0, lastPauseTime = 0;
-
-        function playClockTick() { if(clockSynth) clockSynth.triggerAttackRelease("C6", "32n"); }
-        function acceptTerms() { initAudio(); document.getElementById('terms-screen').classList.add('hidden'); document.getElementById('main-menu').classList.remove('hidden'); }
-        
-        function animate() {
-            const isDryOut = currentLevelName === 'Dry Out';
-            ctx.fillStyle = isDryOut ? '#fef3c7' : '#0f172a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = isDryOut ? '#d97706' : '#1e293b';
-            ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
-            ctx.fillRect(0, 0, canvas.width, 100);
-
-            scoreScale += (1 - scoreScale) * 0.1;
-
-            if (isPlaying && !isPaused) {
-                if (gameMode === 'cube') {
-                    player.vY += 0.9;
-                    player.y += player.vY;
-                    if (player.y + player.size > canvas.height - 100) { player.y = canvas.height - 100 - player.size; player.vY = 0; if (jumpPressed) player.vY = -18; }
-                } else if (gameMode === 'ship') {
-                    if (jumpPressed) { player.vY -= 0.8; } else { player.vY += 0.6; }
-                    player.y += player.vY;
-                    if (player.y < 120) { player.y = 120; player.vY = 0; }
-                    if (player.y + player.size > canvas.height - 120) { player.y = canvas.height - 120 - player.size; player.vY = 0; }
-                } else if (gameMode === 'ufo') {
-                    if (jumpPressed) { player.vY = -18; }
-                    player.y += player.vY;
-                    player.vY += 0.9;
-                    if (player.y + player.size > canvas.height - 100) { player.y = canvas.height - 100 - player.size; player.vY = 0; }
-                } else if (gameMode === 'wave') {
-                    if (jumpPressed) { player.y -= 10; } else { player.y += 10; }
-                    if (player.y < 100) player.y = 100;
-                    if (player.y + player.size > canvas.height - 100) player.y = canvas.height - 100 - player.size;
-                }
-                cameraX += 7; // Constant speed
-            }
-
-            ctx.fillStyle = '#eab308';
-            jumpPads.forEach(pad => {
-                let x = pad.x - cameraX;
-                if (x > -100 && x < canvas.width) {
-                    ctx.beginPath(); ctx.arc(x + 20, canvas.height - 100, 20, Math.PI, 0); ctx.fill();
-                    if (isPlaying && !isPaused && player.x < x + 40 && player.x + 35 > x && player.y + player.size >= canvas.height - 100) player.vY = -25;
-                }
-            });
-
-            ctx.fillStyle = isDryOut ? '#b45309' : '#f43f5e';
-            obstacles.forEach(obs => {
-                let x = obs.x - cameraX;
-                if (x > -100 && x < canvas.width) {
-                    ctx.beginPath(); ctx.moveTo(x, canvas.height - 100); ctx.lineTo(x + 40, canvas.height - 100); ctx.lineTo(x + 20, canvas.height - 140); ctx.fill();
-                    if (isPlaying && !isPaused && player.x < x + 35 && player.x + 35 > x && player.y + player.size > canvas.height - 140) triggerDeath();
-                    if (isPlaying && !isPaused && (gameMode === 'cube' || gameMode === 'wave') && !obs.passed && x + 35 < player.x) { 
-                        obs.passed = true; score++; scoreScale = 1.8;
-                        if(synth) synth.triggerAttackRelease("C6", "16n");
-                        if(score >= 25) triggerWin(); 
-                    }
-                }
-            });
-            ceiling.forEach(obs => {
-                let x = obs.x - cameraX;
-                if (x > -100 && x < canvas.width) {
-                    ctx.beginPath(); ctx.moveTo(x, 100); ctx.lineTo(x + 40, 100); ctx.lineTo(x + 20, 140); ctx.fill();
-                    if (isPlaying && !isPaused && player.x < x + 35 && player.x + 35 > x && player.y < 140) triggerDeath();
-                }
-            });
-            
-            if (isPlaying) {
-                if(gameMode === 'cube' || gameMode === 'wave') {
-                    ctx.fillStyle = isDryOut ? 'black' : "white"; ctx.font = `bold ${30 * scoreScale}px Arial`; 
-                    ctx.fillText("Score: " + score, 100, 60);
-                } else {
-                    let effectiveTime = (Date.now() - startTime - pauseAccumulatedTime) / 1000;
-                    let remaining = Math.max(0, 25 - effectiveTime);
-                    let seconds = Math.floor(remaining);
-                    
-                    if (seconds !== lastTimerSecond) {
-                        if (!isPaused && seconds < 25) playClockTick();
-                        lastTimerSecond = seconds;
-                    }
-
-                    let pulseFactor = Math.max(0, 1 - (effectiveTime % 1));
-                    let scale = 1 + (pulseFactor * 0.4);
-                    let color = (pulseFactor > 0.1) ? "#ef4444" : (isDryOut ? 'black' : "white");
-                    
-                    ctx.fillStyle = color;
-                    ctx.font = `bold ${30 * scale}px Arial`;
-                    ctx.fillText("Survive: " + seconds, 100, 60);
-                    if(remaining <= 0) triggerWin();
-                }
-                
-                // Color change for Wave: Green
-                ctx.fillStyle = gameMode === 'wave' ? '#22c55e' : (gameMode === 'cube' ? '#06b6d4' : (gameMode === 'ship' ? '#a855f7' : '#d946ef'));
-                if (gameMode === 'ufo') {
-                    ctx.beginPath(); ctx.ellipse(player.x + player.size/2, player.y + player.size/2, player.size/1.2, player.size/2.5, 0, 0, Math.PI * 2); ctx.fill();
-                } else {
-                    ctx.fillRect(player.x, player.y, player.size, player.size);
-                }
-            }
-            requestAnimationFrame(animate);
-        }
-
-        function togglePause() { 
-            isPaused = !isPaused; 
-            document.getElementById('pause-screen').classList.toggle('hidden', !isPaused);
-            if (isPaused) { lastPauseTime = Date.now(); } else { pauseAccumulatedTime += (Date.now() - lastPauseTime); }
-        }
-        function evacuate() { isPaused = false; isPlaying = false; showMenu(); document.getElementById('pause-screen').classList.add('hidden'); }
-        function retryLevel() { startLevel(currentLevelName, gameMode); document.getElementById('death-screen').classList.add('hidden'); }
-        function triggerDeath() { isPlaying = false; document.getElementById('death-screen').classList.remove('hidden'); document.getElementById('in-game-ui').classList.add('hidden'); }
-        
-        function triggerWin() { 
-            isPlaying = false; 
-            if(winSynth) winSynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "2n");
-            
-            let val = (gameMode === 'cube' || gameMode === 'wave') ? score : 25;
-            let key = 'best_' + currentLevelName;
-            let best = parseFloat(localStorage.getItem(key) || 0);
-            if (val > best) { localStorage.setItem(key, val); isNewBest = true; }
-
-            const subtext = document.getElementById('win-subtext');
-            if (currentLevelName === 'Polargeist') {
-                isMap2Unlocked = true;
-                subtext.classList.remove('hidden');
-                document.getElementById('map2-go-btn').classList.remove('hidden');
-                document.getElementById('map2-trigger-btn').classList.remove('hidden');
-            }
-            document.getElementById('win-screen').classList.remove('hidden'); 
-            document.getElementById('in-game-ui').classList.add('hidden'); 
-        }
-        
-        function startLevel(name, mode) { 
-            isNewBest = false; score = 0; startTime = Date.now(); pauseAccumulatedTime = 0; lastTimerSecond = -1; currentLevelName = name; gameMode = mode; cameraX = 0; player.y = 300; obstacles = []; ceiling = []; jumpPads = [];
-            for(let i = 0; i < 200; i++) {
-                obstacles.push({ x: 800 + (i * 300), passed: false });
-                if (gameMode !== 'cube' && gameMode !== 'wave') ceiling.push({ x: 800 + (i * 300) });
-                if (currentLevelName === 'Dry Out' && i % 3 === 0) jumpPads.push({ x: 800 + (i * 300) + 150 });
-            }
-            document.getElementById('level-select-screen').classList.add('hidden'); 
-            document.getElementById('map2-screen').classList.add('hidden'); 
-            document.getElementById('main-menu').classList.add('hidden'); 
-            document.getElementById('death-screen').classList.add('hidden'); 
-            document.getElementById('win-screen').classList.add('hidden'); 
-            isPlaying = true; 
-            document.getElementById('in-game-ui').classList.remove('hidden'); 
-        }
-
-        function showMenu() { isPlaying = false; document.getElementById('main-menu').classList.remove('hidden'); document.getElementById('level-select-screen').classList.add('hidden'); document.getElementById('map2-screen').classList.add('hidden'); document.getElementById('tutorial-screen').classList.add('hidden'); document.getElementById('death-screen').classList.add('hidden'); document.getElementById('win-screen').classList.add('hidden'); document.getElementById('mods-screen').classList.add('hidden'); document.getElementById('customizer-screen').classList.add('hidden'); document.getElementById('in-game-ui').classList.add('hidden'); }
-        function showLevelSelect() { document.getElementById('main-menu').classList.add('hidden'); document.getElementById('level-select-screen').classList.remove('hidden'); document.getElementById('map2-screen').classList.add('hidden'); }
-        function showMap2() { document.getElementById('level-select-screen').classList.add('hidden'); document.getElementById('win-screen').classList.add('hidden'); document.getElementById('map2-screen').classList.remove('hidden'); }
-        function showTutorial() { document.getElementById('main-menu').classList.add('hidden'); document.getElementById('tutorial-screen').classList.remove('hidden'); }
-        function handleSquish() { squishCount++; document.getElementById('tutorial-squish-count').textContent = squishCount; }
-        function showMods() { document.getElementById('main-menu').classList.add('hidden'); document.getElementById('mods-screen').classList.remove('hidden'); }
-        function downloadMod() { document.getElementById('open-customizer-btn').classList.remove('hidden'); }
-        function showCustomizer() { document.getElementById('mods-screen').classList.add('hidden'); document.getElementById('customizer-screen').classList.remove('hidden'); }
-        function saveMessages() { location.reload(); }
-
-        window.addEventListener('keydown', (e) => { if ([' ', 'ArrowUp', 'w'].includes(e.key)) jumpPressed = true; if (e.key.toLowerCase() === 't' && isPlaying) togglePause(); });
-        window.addEventListener('keyup', (e) => { if ([' ', 'ArrowUp', 'w'].includes(e.key)) jumpPressed = false; });
+        function animate() { requestAnimationFrame(animate); }
         animate();
     </script>
 </body>
